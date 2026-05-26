@@ -10,6 +10,17 @@ interface DpiItem {
   quantita_disponibile: number;
 }
 
+interface Movimento {
+  id: number;
+  quantita: number;
+  data_assegnazione: string;
+  data_restituzione: string | null;
+  stato: string;
+  note: string | null;
+  personale_cognome: string;
+  personale_nome: string;
+}
+
 const emptyForm = { codice_articolo: "", descrizione_articolo: "", quantita_totale: 0, quantita_disponibile: 0 };
 
 export default function DpiPage() {
@@ -18,6 +29,11 @@ export default function DpiPage() {
   const [editing, setEditing] = useState<DpiItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
+
+  // Drill-down
+  const [selectedDpi, setSelectedDpi] = useState<DpiItem | null>(null);
+  const [movimenti, setMovimenti] = useState<Movimento[]>([]);
+  const [loadingMov, setLoadingMov] = useState(false);
 
   useEffect(() => {
     fetch("/api/dpi")
@@ -51,6 +67,22 @@ export default function DpiPage() {
   function closeModal() {
     setEditing(null);
     setCreating(false);
+  }
+
+  function toggleDetail(item: DpiItem) {
+    if (selectedDpi?.id === item.id) {
+      setSelectedDpi(null);
+      setMovimenti([]);
+    } else {
+      setSelectedDpi(item);
+      setLoadingMov(true);
+      fetch(`/api/assegnazioni?dpi_id=${item.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setMovimenti(data);
+          setLoadingMov(false);
+        });
+    }
   }
 
   async function saveEdit() {
@@ -111,7 +143,13 @@ export default function DpiPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50">
+                <tr
+                  key={item.id}
+                  className={`hover:bg-slate-50 cursor-pointer ${
+                    selectedDpi?.id === item.id ? "bg-blue-50" : ""
+                  }`}
+                  onClick={() => toggleDetail(item)}
+                >
                   <td className="px-4 py-3 font-mono text-xs">{item.codice_articolo}</td>
                   <td className="px-4 py-3">{item.descrizione_articolo}</td>
                   <td className="px-4 py-3 text-right">{item.quantita_totale}</td>
@@ -126,7 +164,10 @@ export default function DpiPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={() => openEdit(item)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEdit(item);
+                      }}
                       className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
                     >
                       Modifica
@@ -141,6 +182,69 @@ export default function DpiPage() {
           <p className="p-6 text-center text-slate-400">Nessun DPI trovato.</p>
         )}
       </div>
+
+      {/* Drill-down movimenti */}
+      {selectedDpi && (
+        <div className="mt-4 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-700">
+              Movimenti: {selectedDpi.codice_articolo} - {selectedDpi.descrizione_articolo}
+            </h2>
+            <button
+              onClick={() => { setSelectedDpi(null); setMovimenti([]); }}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
+            >
+              Chiudi
+            </button>
+          </div>
+          <div className="overflow-x-auto max-h-80 overflow-y-auto">
+            {loadingMov ? (
+              <p className="p-6 text-center text-slate-400">Caricamento...</p>
+            ) : movimenti.length === 0 ? (
+              <p className="p-6 text-center text-slate-400">Nessun movimento per questo DPI.</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b text-slate-400 sticky top-0 bg-white">
+                    <th className="px-3 py-2 text-left">Persona</th>
+                    <th className="px-3 py-2 text-right">Q.tà</th>
+                    <th className="px-3 py-2 text-left">Data Assegn.</th>
+                    <th className="px-3 py-2 text-left">Data Restit.</th>
+                    <th className="px-3 py-2 text-left">Stato</th>
+                    <th className="px-3 py-2 text-left">Note</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {movimenti.map((m) => (
+                    <tr key={m.id} className="hover:bg-slate-50">
+                      <td className="px-3 py-2 font-medium">
+                        {m.personale_cognome} {m.personale_nome}
+                      </td>
+                      <td className="px-3 py-2 text-right">{m.quantita}</td>
+                      <td className="px-3 py-2">{m.data_assegnazione}</td>
+                      <td className="px-3 py-2">{m.data_restituzione || "-"}</td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            m.stato === "assegnato"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
+                          {m.stato}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 max-w-[150px] truncate text-slate-400">
+                        {m.note || "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal: create or edit */}
       {(editing || creating) && (
