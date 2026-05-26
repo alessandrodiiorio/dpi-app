@@ -23,7 +23,7 @@ export default function NuovaAssegnazionePage() {
   const [persList, setPersList] = useState<Persona[]>([]);
   const [dpiSearch, setDpiSearch] = useState("");
   const [persSearch, setPersSearch] = useState("");
-  const [selectedDpi, setSelectedDpi] = useState<DpiItem | null>(null);
+  const [selectedDpiId, setSelectedDpiId] = useState("");
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const [quantita, setQuantita] = useState(1);
   const [dataAssegnazione, setDataAssegnazione] = useState(
@@ -39,7 +39,7 @@ export default function NuovaAssegnazionePage() {
   }, []);
 
   const filteredDpi = useMemo(() => {
-    if (!dpiSearch) return [];
+    if (!dpiSearch) return dpiList;
     const q = dpiSearch.toLowerCase();
     return dpiList.filter(
       (d) =>
@@ -47,6 +47,11 @@ export default function NuovaAssegnazionePage() {
         d.descrizione_articolo.toLowerCase().includes(q)
     );
   }, [dpiSearch, dpiList]);
+
+  const selectedDpi = useMemo(
+    () => dpiList.find((d) => d.id === parseInt(selectedDpiId)),
+    [selectedDpiId, dpiList]
+  );
 
   const filteredPers = useMemo(() => {
     if (!persSearch) return persList;
@@ -61,7 +66,7 @@ export default function NuovaAssegnazionePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedDpi || !selectedPersonaId) {
+    if (!selectedDpiId || !selectedPersonaId) {
       setError("Seleziona DPI e persona");
       return;
     }
@@ -71,7 +76,7 @@ export default function NuovaAssegnazionePage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        dpi_id: selectedDpi.id,
+        dpi_id: parseInt(selectedDpiId),
         personale_id: parseInt(selectedPersonaId),
         quantita,
         data_assegnazione: dataAssegnazione,
@@ -91,55 +96,33 @@ export default function NuovaAssegnazionePage() {
     <div>
       <h1 className="text-2xl font-bold text-slate-800 mb-6">Nuova Assegnazione</h1>
       <form onSubmit={handleSubmit} className="max-w-xl space-y-6">
-        {/* DPI select */}
+        {/* DPI select — dropdown nativo */}
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">DPI</label>
-          {selectedDpi ? (
-            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <span className="font-mono text-xs">{selectedDpi.codice_articolo}</span>
-              <span className="text-sm flex-1 truncate">{selectedDpi.descrizione_articolo}</span>
-              <span className="text-xs text-slate-400">
-                Disp: {selectedDpi.quantita_disponibile}
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedDpi(null)}
-                className="text-xs text-red-500 hover:underline"
-              >
-                Cambia
-              </button>
-            </div>
-          ) : (
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"
-                placeholder="Cerca DPI per codice o descrizione..."
-                value={dpiSearch}
-                onChange={(e) => setDpiSearch(e.target.value)}
-              />
-              {dpiSearch && filteredDpi.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {filteredDpi.slice(0, 10).map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex justify-between"
-                      onClick={() => {
-                        setSelectedDpi(d);
-                        setDpiSearch("");
-                      }}
-                    >
-                      <span>
-                        <span className="font-mono text-xs">{d.codice_articolo}</span> -{" "}
-                        {d.descrizione_articolo}
-                      </span>
-                      <span className="text-xs text-slate-400">Disp: {d.quantita_disponibile}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          <input
+            type="text"
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm mb-2"
+            placeholder="Filtra per codice o descrizione..."
+            value={dpiSearch}
+            onChange={(e) => setDpiSearch(e.target.value)}
+          />
+          <select
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+            value={selectedDpiId}
+            onChange={(e) => setSelectedDpiId(e.target.value)}
+            required
+          >
+            <option value="">-- Seleziona DPI --</option>
+            {filteredDpi.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.codice_articolo} — {d.descrizione_articolo} (disp: {d.quantita_disponibile})
+              </option>
+            ))}
+          </select>
+          {selectedDpi && (
+            <p className="text-xs text-slate-400 mt-1">
+              Disponibili: {selectedDpi.quantita_disponibile} pezzi
+            </p>
           )}
         </div>
 
@@ -208,7 +191,8 @@ export default function NuovaAssegnazionePage() {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}
+          </div>
         )}
 
         <div className="flex gap-3">
@@ -221,7 +205,7 @@ export default function NuovaAssegnazionePage() {
           </button>
           <button
             type="submit"
-            disabled={loading || !selectedDpi || !selectedPersonaId}
+            disabled={loading || !selectedDpiId || !selectedPersonaId}
             className="px-6 py-2 rounded-lg text-sm bg-slate-800 text-white disabled:opacity-50"
           >
             {loading ? "Salvataggio..." : "Assegna DPI"}
