@@ -24,8 +24,11 @@ export default function NuovaAssegnazionePage() {
   const [dpiSearch, setDpiSearch] = useState("");
   const [persSearch, setPersSearch] = useState("");
   const [selectedDpi, setSelectedDpi] = useState<DpiItem | null>(null);
-  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const [quantita, setQuantita] = useState(1);
+  const [dataAssegnazione, setDataAssegnazione] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -46,7 +49,7 @@ export default function NuovaAssegnazionePage() {
   }, [dpiSearch, dpiList]);
 
   const filteredPers = useMemo(() => {
-    if (!persSearch) return [];
+    if (!persSearch) return persList;
     const q = persSearch.toLowerCase();
     return persList.filter(
       (p) =>
@@ -58,7 +61,7 @@ export default function NuovaAssegnazionePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedDpi || !selectedPersona) {
+    if (!selectedDpi || !selectedPersonaId) {
       setError("Seleziona DPI e persona");
       return;
     }
@@ -69,9 +72,9 @@ export default function NuovaAssegnazionePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         dpi_id: selectedDpi.id,
-        personale_id: selectedPersona.id,
+        personale_id: parseInt(selectedPersonaId),
         quantita,
-        data_assegnazione: new Date().toISOString().split("T")[0],
+        data_assegnazione: dataAssegnazione,
         note: note || null,
       }),
     });
@@ -140,52 +143,43 @@ export default function NuovaAssegnazionePage() {
           )}
         </div>
 
-        {/* Persona select */}
+        {/* Persona select — dropdown nativo */}
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">Persona</label>
-          {selectedPersona ? (
-            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <span className="font-medium">
-                {selectedPersona.cognome} {selectedPersona.nome}
-              </span>
-              <span className="text-xs text-slate-400">ID: {selectedPersona.id_utente}</span>
-              <button
-                type="button"
-                onClick={() => setSelectedPersona(null)}
-                className="text-xs text-red-500 hover:underline ml-auto"
-              >
-                Cambia
-              </button>
-            </div>
-          ) : (
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"
-                placeholder="Cerca persona per nome, cognome o ID..."
-                value={persSearch}
-                onChange={(e) => setPersSearch(e.target.value)}
-              />
-              {persSearch && filteredPers.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {filteredPers.slice(0, 10).map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50"
-                      onClick={() => {
-                        setSelectedPersona(p);
-                        setPersSearch("");
-                      }}
-                    >
-                      {p.cognome} {p.nome}{" "}
-                      <span className="text-xs text-slate-400">({p.id_utente})</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <input
+            type="text"
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm mb-2"
+            placeholder="Filtra per nome, cognome..."
+            value={persSearch}
+            onChange={(e) => setPersSearch(e.target.value)}
+          />
+          <select
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+            value={selectedPersonaId}
+            onChange={(e) => setSelectedPersonaId(e.target.value)}
+            required
+          >
+            <option value="">-- Seleziona persona --</option>
+            {filteredPers.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.cognome} {p.nome} ({p.id_utente})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Data assegnazione */}
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-1">
+            Data Assegnazione
+          </label>
+          <input
+            type="date"
+            className="w-48 px-4 py-2 border border-slate-300 rounded-lg text-sm"
+            value={dataAssegnazione}
+            onChange={(e) => setDataAssegnazione(e.target.value)}
+            required
+          />
         </div>
 
         {/* Quantità */}
@@ -227,7 +221,7 @@ export default function NuovaAssegnazionePage() {
           </button>
           <button
             type="submit"
-            disabled={loading || !selectedDpi || !selectedPersona}
+            disabled={loading || !selectedDpi || !selectedPersonaId}
             className="px-6 py-2 rounded-lg text-sm bg-slate-800 text-white disabled:opacity-50"
           >
             {loading ? "Salvataggio..." : "Assegna DPI"}
