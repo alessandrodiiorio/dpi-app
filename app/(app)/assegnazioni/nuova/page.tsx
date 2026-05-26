@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface DpiItem {
@@ -21,10 +21,17 @@ export default function NuovaAssegnazionePage() {
   const router = useRouter();
   const [dpiList, setDpiList] = useState<DpiItem[]>([]);
   const [persList, setPersList] = useState<Persona[]>([]);
+
+  // DPI
   const [dpiSearch, setDpiSearch] = useState("");
+  const [selectedDpi, setSelectedDpi] = useState<DpiItem | null>(null);
+  const [showDpiSuggestions, setShowDpiSuggestions] = useState(false);
+
+  // Persona
   const [persSearch, setPersSearch] = useState("");
-  const [selectedDpiId, setSelectedDpiId] = useState("");
-  const [selectedPersonaId, setSelectedPersonaId] = useState("");
+  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [showPersSuggestions, setShowPersSuggestions] = useState(false);
+
   const [quantita, setQuantita] = useState(1);
   const [dataAssegnazione, setDataAssegnazione] = useState(
     new Date().toISOString().split("T")[0]
@@ -33,40 +40,62 @@ export default function NuovaAssegnazionePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const dpiRef = useRef<HTMLDivElement>(null);
+  const persRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetch("/api/dpi").then((r) => r.json()).then(setDpiList);
     fetch("/api/personale").then((r) => r.json()).then(setPersList);
   }, []);
 
-  const filteredDpi = useMemo(() => {
-    if (!dpiSearch) return dpiList;
+  // Close suggestions on click outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dpiRef.current && !dpiRef.current.contains(e.target as Node)) {
+        setShowDpiSuggestions(false);
+      }
+      if (persRef.current && !persRef.current.contains(e.target as Node)) {
+        setShowPersSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const dpiSuggestions = useMemo(() => {
     const q = dpiSearch.toLowerCase();
     return dpiList.filter(
       (d) =>
         d.codice_articolo.toLowerCase().includes(q) ||
         d.descrizione_articolo.toLowerCase().includes(q)
-    );
+    ).slice(0, 15);
   }, [dpiSearch, dpiList]);
 
-  const selectedDpi = useMemo(
-    () => dpiList.find((d) => d.id === parseInt(selectedDpiId)),
-    [selectedDpiId, dpiList]
-  );
-
-  const filteredPers = useMemo(() => {
-    if (!persSearch) return persList;
+  const persSuggestions = useMemo(() => {
     const q = persSearch.toLowerCase();
     return persList.filter(
       (p) =>
         p.cognome.toLowerCase().includes(q) ||
         p.nome.toLowerCase().includes(q) ||
         p.id_utente.toLowerCase().includes(q)
-    );
+    ).slice(0, 15);
   }, [persSearch, persList]);
+
+  function selectDpi(d: DpiItem) {
+    setSelectedDpi(d);
+    setDpiSearch(`${d.codice_articolo} — ${d.descrizione_articolo}`);
+    setShowDpiSuggestions(false);
+  }
+
+  function selectPersona(p: Persona) {
+    setSelectedPersona(p);
+    setPersSearch(`${p.cognome} ${p.nome}`);
+    setShowPersSuggestions(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedDpiId || !selectedPersonaId) {
+    if (!selectedDpi || !selectedPersona) {
       setError("Seleziona DPI e persona");
       return;
     }
@@ -76,8 +105,8 @@ export default function NuovaAssegnazionePage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        dpi_id: parseInt(selectedDpiId),
-        personale_id: parseInt(selectedPersonaId),
+        dpi_id: selectedDpi.id,
+        personale_id: selectedPersona.id,
         quantita,
         data_assegnazione: dataAssegnazione,
         note: note || null,
@@ -96,59 +125,83 @@ export default function NuovaAssegnazionePage() {
     <div>
       <h1 className="text-2xl font-bold text-slate-800 mb-6">Nuova Assegnazione</h1>
       <form onSubmit={handleSubmit} className="max-w-xl space-y-6">
-        {/* DPI select — dropdown nativo */}
-        <div>
+        {/* DPI autocomplete */}
+        <div ref={dpiRef} className="relative">
           <label className="block text-sm font-medium text-slate-600 mb-1">DPI</label>
           <input
             type="text"
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm mb-2"
-            placeholder="Filtra per codice o descrizione..."
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"
+            placeholder="Cerca per codice o descrizione..."
             value={dpiSearch}
-            onChange={(e) => setDpiSearch(e.target.value)}
+            onChange={(e) => {
+              setDpiSearch(e.target.value);
+              setSelectedDpi(null);
+              setShowDpiSuggestions(true);
+            }}
+            onFocus={() => { if (!selectedDpi) setShowDpiSuggestions(true); }}
           />
-          <select
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white"
-            value={selectedDpiId}
-            onChange={(e) => setSelectedDpiId(e.target.value)}
-            required
-          >
-            <option value="">-- Seleziona DPI --</option>
-            {filteredDpi.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.codice_articolo} — {d.descrizione_articolo} (disp: {d.quantita_disponibile})
-              </option>
-            ))}
-          </select>
+          {showDpiSuggestions && dpiSuggestions.length > 0 && !selectedDpi && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+              {dpiSuggestions.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex justify-between items-center"
+                  onClick={() => selectDpi(d)}
+                >
+                  <span>
+                    <span className="font-mono text-xs font-medium">{d.codice_articolo}</span>
+                    <span className="mx-2 text-slate-300">—</span>
+                    <span>{d.descrizione_articolo}</span>
+                  </span>
+                  <span className="text-xs text-slate-400 shrink-0 ml-4">
+                    {d.quantita_disponibile} pz
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           {selectedDpi && (
             <p className="text-xs text-slate-400 mt-1">
-              Disponibili: {selectedDpi.quantita_disponibile} pezzi
+              Disponibili: <strong>{selectedDpi.quantita_disponibile}</strong> pezzi
             </p>
           )}
         </div>
 
-        {/* Persona select — dropdown nativo */}
-        <div>
+        {/* Persona autocomplete */}
+        <div ref={persRef} className="relative">
           <label className="block text-sm font-medium text-slate-600 mb-1">Persona</label>
           <input
             type="text"
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm mb-2"
-            placeholder="Filtra per nome, cognome..."
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"
+            placeholder="Cerca per nome, cognome o ID..."
             value={persSearch}
-            onChange={(e) => setPersSearch(e.target.value)}
+            onChange={(e) => {
+              setPersSearch(e.target.value);
+              setSelectedPersona(null);
+              setShowPersSuggestions(true);
+            }}
+            onFocus={() => { if (!selectedPersona) setShowPersSuggestions(true); }}
           />
-          <select
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white"
-            value={selectedPersonaId}
-            onChange={(e) => setSelectedPersonaId(e.target.value)}
-            required
-          >
-            <option value="">-- Seleziona persona --</option>
-            {filteredPers.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.cognome} {p.nome} ({p.id_utente})
-              </option>
-            ))}
-          </select>
+          {showPersSuggestions && persSuggestions.length > 0 && !selectedPersona && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+              {persSuggestions.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex justify-between items-center"
+                  onClick={() => selectPersona(p)}
+                >
+                  <span>
+                    <span className="font-medium">{p.cognome} {p.nome}</span>
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    ID: {p.id_utente}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Data assegnazione */}
@@ -191,8 +244,7 @@ export default function NuovaAssegnazionePage() {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}
-          </div>
+          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
         )}
 
         <div className="flex gap-3">
@@ -205,7 +257,7 @@ export default function NuovaAssegnazionePage() {
           </button>
           <button
             type="submit"
-            disabled={loading || !selectedDpiId || !selectedPersonaId}
+            disabled={loading || !selectedDpi || !selectedPersona}
             className="px-6 py-2 rounded-lg text-sm bg-slate-800 text-white disabled:opacity-50"
           >
             {loading ? "Salvataggio..." : "Assegna DPI"}
