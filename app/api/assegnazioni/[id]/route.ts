@@ -81,6 +81,29 @@ export async function DELETE(
 ) {
   const db = getDb();
   const { id } = await params;
+
+  // Fetch assignment before deleting to restore stock if active
+  const [assignment] = await db
+    .select()
+    .from(assegnazioni)
+    .where(eq(assegnazioni.id, parseInt(id)));
+
+  if (!assignment) return Response.json({ error: "Not found" }, { status: 404 });
+
+  // If still active, return stock to DPI
+  if (assignment.stato === "assegnato" && assignment.dpi_id != null) {
+    const [dpiItem] = await db
+      .select()
+      .from(dpi)
+      .where(eq(dpi.id, assignment.dpi_id));
+    if (dpiItem) {
+      await db
+        .update(dpi)
+        .set({ quantita_disponibile: (dpiItem.quantita_disponibile ?? 0) + (assignment.quantita ?? 0) })
+        .where(eq(dpi.id, assignment.dpi_id));
+    }
+  }
+
   await db.delete(assegnazioni).where(eq(assegnazioni.id, parseInt(id)));
   return Response.json({ success: true });
 }

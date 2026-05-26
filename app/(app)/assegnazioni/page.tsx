@@ -54,6 +54,14 @@ export default function AssegnazioniPage() {
     }
   }
 
+  async function elimina(id: number) {
+    if (!confirm("Eliminare questa assegnazione?")) return;
+    const res = await fetch(`/api/assegnazioni/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    }
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-800 mb-6">Assegnazioni</h1>
@@ -139,14 +147,23 @@ export default function AssegnazioniPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {a.stato === "assegnato" && (
+                    <div className="flex items-center gap-1 justify-end">
+                      {a.stato === "assegnato" && (
+                        <button
+                          onClick={() => restituisci(a.id)}
+                          className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 font-medium"
+                        >
+                          Restituisci
+                        </button>
+                      )}
                       <button
-                        onClick={() => restituisci(a.id)}
-                        className="text-xs px-3 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 font-medium"
+                        onClick={() => elimina(a.id)}
+                        className="text-xs px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 font-medium"
+                        title="Elimina"
                       >
-                        Restituisci
+                        ✕
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}

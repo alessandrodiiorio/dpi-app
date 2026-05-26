@@ -70,6 +70,14 @@ export default function DpiPage() {
     setCreating(false);
   }
 
+  async function eliminaMovimento(id: number) {
+    if (!confirm("Eliminare questa assegnazione?")) return;
+    const res = await fetch(`/api/assegnazioni/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setMovimenti((prev) => prev.filter((m) => m.id !== id));
+    }
+  }
+
   function toggleDetail(item: DpiItem) {
     if (selectedDpi?.id === item.id) {
       setSelectedDpi(null);
@@ -219,6 +227,7 @@ export default function DpiPage() {
                     <th className="px-3 py-2 text-left">Data Restit.</th>
                     <th className="px-3 py-2 text-left">Stato</th>
                     <th className="px-3 py-2 text-left">Note</th>
+                    <th className="px-3 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -243,6 +252,15 @@ export default function DpiPage() {
                       </td>
                       <td className="px-3 py-2 max-w-[150px] truncate text-slate-400">
                         {m.note || "-"}
+                      </td>
+                      <td className="px-3 py-2">
+                        <button
+                          onClick={() => eliminaMovimento(m.id)}
+                          className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200 font-medium"
+                          title="Elimina"
+                        >
+                          ✕
+                        </button>
                       </td>
                     </tr>
                   ))}
