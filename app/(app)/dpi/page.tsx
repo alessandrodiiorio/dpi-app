@@ -10,11 +10,14 @@ interface DpiItem {
   quantita_disponibile: number;
 }
 
+const emptyForm = { codice_articolo: "", descrizione_articolo: "", quantita_totale: 0, quantita_disponibile: 0 };
+
 export default function DpiPage() {
   const [items, setItems] = useState<DpiItem[]>([]);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<DpiItem | null>(null);
-  const [form, setForm] = useState({ quantita_totale: 0, quantita_disponibile: 0 });
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
     fetch("/api/dpi")
@@ -30,7 +33,24 @@ export default function DpiPage() {
 
   function openEdit(item: DpiItem) {
     setEditing(item);
-    setForm({ quantita_totale: item.quantita_totale, quantita_disponibile: item.quantita_disponibile });
+    setCreating(false);
+    setForm({
+      codice_articolo: item.codice_articolo,
+      descrizione_articolo: item.descrizione_articolo,
+      quantita_totale: item.quantita_totale,
+      quantita_disponibile: item.quantita_disponibile,
+    });
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setCreating(true);
+    setForm(emptyForm);
+  }
+
+  function closeModal() {
+    setEditing(null);
+    setCreating(false);
   }
 
   async function saveEdit() {
@@ -43,13 +63,34 @@ export default function DpiPage() {
     if (res.ok) {
       const updated = await res.json();
       setItems((prev) => prev.map((i) => (i.id === editing.id ? updated : i)));
-      setEditing(null);
+      closeModal();
+    }
+  }
+
+  async function saveCreate() {
+    const res = await fetch("/api/dpi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setItems((prev) => [...prev, created]);
+      closeModal();
     }
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Catalogo DPI</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-800">Catalogo DPI</h1>
+        <button
+          onClick={openCreate}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700"
+        >
+          + Nuovo DPI
+        </button>
+      </div>
       <input
         className="w-full max-w-md mb-4 px-4 py-2 border border-slate-300 rounded-lg text-sm"
         placeholder="Cerca per codice o descrizione..."
@@ -88,7 +129,7 @@ export default function DpiPage() {
                       onClick={() => openEdit(item)}
                       className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
                     >
-                      Modifica q.tà
+                      Modifica
                     </button>
                   </td>
                 </tr>
@@ -101,41 +142,53 @@ export default function DpiPage() {
         )}
       </div>
 
-      {/* Modal edit */}
-      {editing && (
+      {/* Modal: create or edit */}
+      {(editing || creating) && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
             <h3 className="text-lg font-bold mb-4">
-              Modifica q.tà: {editing.codice_articolo}
+              {editing ? `Modifica: ${editing.codice_articolo}` : "Nuovo DPI"}
             </h3>
-            <label className="block mb-2 text-sm text-slate-600">Quantità Totale</label>
+            <label className="block mb-1 text-sm text-slate-600">Codice Articolo</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
+              value={form.codice_articolo}
+              onChange={(e) => setForm({ ...form, codice_articolo: e.target.value })}
+            />
+            <label className="block mb-1 text-sm text-slate-600">Descrizione</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
+              value={form.descrizione_articolo}
+              onChange={(e) => setForm({ ...form, descrizione_articolo: e.target.value })}
+            />
+            <label className="block mb-1 text-sm text-slate-600">Quantità Totale</label>
             <input
               type="number"
-              className="w-full px-3 py-2 border rounded-lg mb-3"
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
               value={form.quantita_totale}
               onChange={(e) => setForm({ ...form, quantita_totale: parseInt(e.target.value) || 0 })}
             />
-            <label className="block mb-2 text-sm text-slate-600">Quantità Disponibile</label>
+            <label className="block mb-1 text-sm text-slate-600">Quantità Disponibile</label>
             <input
               type="number"
-              className="w-full px-3 py-2 border rounded-lg mb-4"
+              className="w-full px-3 py-2 border rounded-lg mb-4 text-sm"
               value={form.quantita_disponibile}
-              onChange={(e) =>
-                setForm({ ...form, quantita_disponibile: parseInt(e.target.value) || 0 })
-              }
+              onChange={(e) => setForm({ ...form, quantita_disponibile: parseInt(e.target.value) || 0 })}
             />
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => setEditing(null)}
+                onClick={closeModal}
                 className="px-4 py-2 rounded-lg text-sm border border-slate-300"
               >
                 Annulla
               </button>
               <button
-                onClick={saveEdit}
-                className="px-4 py-2 rounded-lg text-sm bg-slate-800 text-white"
+                onClick={editing ? saveEdit : saveCreate}
+                className="px-4 py-2 rounded-lg text-sm bg-slate-800 text-white hover:bg-slate-700"
               >
-                Salva
+                {editing ? "Salva" : "Crea"}
               </button>
             </div>
           </div>
