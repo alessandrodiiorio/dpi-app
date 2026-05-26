@@ -22,6 +22,9 @@ function Sidebar() {
         <Link href="/assegnazioni" className={linkClass}>
           Assegnazioni
         </Link>
+        <Link href="/report" className={linkClass}>
+          Report
+        </Link>
         <Link
           href="/assegnazioni/nuova"
           className="block px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700 transition-colors mt-4 text-center"
