@@ -20,13 +20,23 @@ interface Assegnazione {
 export default function AssegnazioniPage() {
   const [items, setItems] = useState<Assegnazione[]>([]);
   const [filter, setFilter] = useState("tutti");
+  const [dataDa, setDataDa] = useState("");
+  const [dataA, setDataA] = useState("");
 
-  useEffect(() => {
-    const params = filter !== "tutti" ? `?stato=${filter}` : "";
-    fetch(`/api/assegnazioni${params}`)
+  function load() {
+    const params = new URLSearchParams();
+    if (filter !== "tutti") params.set("stato", filter);
+    if (dataDa) params.set("data_da", dataDa);
+    if (dataA) params.set("data_a", dataA);
+    const qs = params.toString();
+    fetch(`/api/assegnazioni${qs ? `?${qs}` : ""}`)
       .then((r) => r.json())
       .then(setItems);
-  }, [filter]);
+  }
+
+  useEffect(() => {
+    load();
+  }, [filter, dataDa, dataA]);
 
   async function restituisci(id: number) {
     const res = await fetch(`/api/assegnazioni/${id}`, {
@@ -47,7 +57,7 @@ export default function AssegnazioniPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-800 mb-6">Assegnazioni</h1>
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
         {["tutti", "assegnato", "restituito"].map((s) => (
           <button
             key={s}
@@ -61,6 +71,30 @@ export default function AssegnazioniPage() {
             {s === "tutti" ? "Tutti" : s === "assegnato" ? "Assegnati" : "Restituiti"}
           </button>
         ))}
+        <div className="flex items-center gap-2 ml-4">
+          <label className="text-xs text-slate-500">Da</label>
+          <input
+            type="date"
+            value={dataDa}
+            onChange={(e) => setDataDa(e.target.value)}
+            className="px-2 py-1.5 border border-slate-300 rounded text-sm"
+          />
+          <label className="text-xs text-slate-500">A</label>
+          <input
+            type="date"
+            value={dataA}
+            onChange={(e) => setDataA(e.target.value)}
+            className="px-2 py-1.5 border border-slate-300 rounded text-sm"
+          />
+          {(dataDa || dataA) && (
+            <button
+              onClick={() => { setDataDa(""); setDataA(""); }}
+              className="text-xs text-red-500 hover:underline"
+            >
+              Reset
+            </button>
+          )}
+        </div>
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">

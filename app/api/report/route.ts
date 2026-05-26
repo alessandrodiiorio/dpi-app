@@ -35,6 +35,7 @@ export async function GET() {
     .map(([dpiId, qty]) => {
       const d = dpiRows.find((r) => r.id === dpiId);
       return {
+        dpi_id: dpiId,
         codice: d?.codice_articolo || "?",
         descrizione: d?.descrizione_articolo || "?",
         quantita_assegnata: qty,
@@ -57,6 +58,7 @@ export async function GET() {
       const p = persRows.find((r) => r.id === persId);
       const active = assegnati.filter((a) => a.personale_id === persId).length;
       return {
+        personale_id: persId,
         cognome: p?.cognome || "?",
         nome: p?.nome || "?",
         totale_assegnazioni: count,

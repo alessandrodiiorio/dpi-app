@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import { assegnazioni, dpi, personale } from "@/db/schema";
-import { eq, and, SQL } from "drizzle-orm";
+import { eq, and, gte, lte, SQL } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const db = getDb();
@@ -9,11 +9,15 @@ export async function GET(request: NextRequest) {
   const stato = searchParams.get("stato");
   const personaleId = searchParams.get("personale_id");
   const dpiId = searchParams.get("dpi_id");
+  const dataDa = searchParams.get("data_da");
+  const dataA = searchParams.get("data_a");
 
   const conditions: SQL[] = [];
   if (stato) conditions.push(eq(assegnazioni.stato, stato as "assegnato" | "restituito"));
   if (personaleId) conditions.push(eq(assegnazioni.personale_id, parseInt(personaleId)));
   if (dpiId) conditions.push(eq(assegnazioni.dpi_id, parseInt(dpiId)));
+  if (dataDa) conditions.push(gte(assegnazioni.data_assegnazione, dataDa));
+  if (dataA) conditions.push(lte(assegnazioni.data_assegnazione, dataA));
 
   const items = await db
     .select({
