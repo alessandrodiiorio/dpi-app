@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { UserMenu } from "./user-menu";
+import { AdminLinks } from "./admin-links";
 
 const linkClass =
   "block px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-200";
@@ -27,6 +28,7 @@ function Sidebar() {
         >
           + Nuova Assegnazione
         </Link>
+        <AdminLinks />
       </nav>
       <div className="border-t border-slate-200 pt-3">
         <UserMenu />
