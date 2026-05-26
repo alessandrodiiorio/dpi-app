@@ -1,6 +1,7 @@
 import { pgTable, serial, varchar, text, integer, date, pgEnum } from "drizzle-orm/pg-core";
 
 export const statoEnum = pgEnum("stato", ["assegnato", "restituito"]);
+export const ruoloEnum = pgEnum("ruolo", ["admin", "operatore"]);
 
 export const dpi = pgTable("dpi", {
   id: serial("id").primaryKey(),
@@ -30,4 +31,11 @@ export const assegnazioni = pgTable("assegnazioni", {
   data_restituzione: date("data_restituzione"),
   note: text("note"),
   stato: statoEnum("stato").default("assegnato"),
+});
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 100 }).unique().notNull(),
+  password_hash: text("password_hash").notNull(),
+  ruolo: ruoloEnum("ruolo").default("operatore").notNull(),
 });

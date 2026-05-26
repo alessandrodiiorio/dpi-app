@@ -2,9 +2,21 @@ import "dotenv/config";
 import * as XLSX from "xlsx";
 import path from "path";
 import { getDb } from "./db";
-import { dpi, personale } from "@/db/schema";
+import { dpi, personale, users } from "@/db/schema";
+import { hashPassword } from "@/lib/auth";
 
 const DPI_DIR = path.join(process.cwd(), "..", "DPI");
+
+async function seedAdmin() {
+  const db = getDb();
+  const hash = await hashPassword("admin123");
+  await db.insert(users).values({
+    username: "admin",
+    password_hash: hash,
+    ruolo: "admin",
+  }).onConflictDoNothing();
+  console.log("Default admin created (admin / admin123)");
+}
 
 async function importDpi() {
   const db = getDb();
@@ -53,6 +65,7 @@ async function importPersonale() {
 
 async function main() {
   console.log("Starting seed...");
+  await seedAdmin();
   await importDpi();
   await importPersonale();
   console.log("Seed complete.");
