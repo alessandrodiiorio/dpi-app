@@ -223,11 +223,10 @@ export default function NuovaAssegnazionePage() {
           <label className="block text-sm font-medium text-slate-600 mb-1">Quantità</label>
           <input
             type="number"
-            min={1}
-            max={selectedDpi?.quantita_disponibile || 999}
+            min={0}
             className="w-32 px-4 py-2 border border-slate-300 rounded-lg text-sm"
             value={quantita}
-            onChange={(e) => setQuantita(parseInt(e.target.value) || 1)}
+            onChange={(e) => setQuantita(parseInt(e.target.value) || 0)}
           />
         </div>
 
