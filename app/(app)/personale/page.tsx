@@ -174,10 +174,9 @@ export default function PersonalePage() {
               {filtered.map((p) => (
                 <tr
                   key={p.id}
-                  className={`hover:bg-slate-50 cursor-pointer ${
+                  className={`hover:bg-slate-50 ${
                     selectedPersona?.id === p.id ? "bg-blue-50" : ""
                   }`}
-                  onClick={() => toggleDetail(p)}
                 >
                   <td className="px-4 py-3 font-medium">{p.cognome}</td>
                   <td className="px-4 py-3">{p.nome}</td>
@@ -192,15 +191,24 @@ export default function PersonalePage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(p);
-                      }}
-                      className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
-                    >
-                      Modifica
-                    </button>
+                    <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={() => toggleDetail(p)}
+                        className={`text-xs px-2 py-1 rounded font-medium ${
+                          selectedPersona?.id === p.id
+                            ? "bg-blue-200 text-blue-700"
+                            : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        }`}
+                      >
+                        Dettaglio
+                      </button>
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
+                      >
+                        Modifica
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

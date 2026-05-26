@@ -155,10 +155,9 @@ export default function DpiPage() {
               {filtered.map((item) => (
                 <tr
                   key={item.id}
-                  className={`hover:bg-slate-50 cursor-pointer ${
+                  className={`hover:bg-slate-50 ${
                     selectedDpi?.id === item.id ? "bg-blue-50" : ""
                   }`}
-                  onClick={() => toggleDetail(item)}
                 >
                   <td className="px-4 py-3 font-mono text-xs">{item.codice_articolo}</td>
                   <td className="px-4 py-3">{item.descrizione_articolo}</td>
@@ -178,15 +177,24 @@ export default function DpiPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(item);
-                      }}
-                      className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
-                    >
-                      Modifica
-                    </button>
+                    <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={() => toggleDetail(item)}
+                        className={`text-xs px-2 py-1 rounded font-medium ${
+                          selectedDpi?.id === item.id
+                            ? "bg-blue-200 text-blue-700"
+                            : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        }`}
+                      >
+                        Dettaglio
+                      </button>
+                      <button
+                        onClick={() => openEdit(item)}
+                        className="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
+                      >
+                        Modifica
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
