@@ -22,14 +22,14 @@ export default function NuovaAssegnazionePage() {
   const [dpiList, setDpiList] = useState<DpiItem[]>([]);
   const [persList, setPersList] = useState<Persona[]>([]);
 
-  // DPI
+  // DPI - multi-select
   const [dpiSearch, setDpiSearch] = useState("");
-  const [selectedDpi, setSelectedDpi] = useState<DpiItem | null>(null);
+  const [selectedDpis, setSelectedDpis] = useState<DpiItem[]>([]);
   const [showDpiSuggestions, setShowDpiSuggestions] = useState(false);
 
-  // Persona
+  // Persona - multi-select
   const [persSearch, setPersSearch] = useState("");
-  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [selectedPersone, setSelectedPersone] = useState<Persona[]>([]);
   const [showPersSuggestions, setShowPersSuggestions] = useState(false);
 
   const [quantita, setQuantita] = useState(1);
@@ -48,7 +48,6 @@ export default function NuovaAssegnazionePage() {
     fetch("/api/personale").then((r) => r.json()).then(setPersList);
   }, []);
 
-  // Close suggestions on click outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dpiRef.current && !dpiRef.current.contains(e.target as Node)) {
@@ -64,90 +63,135 @@ export default function NuovaAssegnazionePage() {
 
   const dpiSuggestions = useMemo(() => {
     const q = dpiSearch.toLowerCase();
-    return dpiList.filter(
-      (d) =>
-        d.codice_articolo.toLowerCase().includes(q) ||
-        d.descrizione_articolo.toLowerCase().includes(q)
-    ).slice(0, 15);
-  }, [dpiSearch, dpiList]);
+    const selectedIds = new Set(selectedDpis.map((d) => d.id));
+    return dpiList
+      .filter(
+        (d) =>
+          !selectedIds.has(d.id) &&
+          (d.codice_articolo.toLowerCase().includes(q) ||
+            d.descrizione_articolo.toLowerCase().includes(q))
+      )
+      .slice(0, 15);
+  }, [dpiSearch, dpiList, selectedDpis]);
 
   const persSuggestions = useMemo(() => {
     const q = persSearch.toLowerCase();
-    return persList.filter(
-      (p) =>
-        p.cognome.toLowerCase().includes(q) ||
-        p.nome.toLowerCase().includes(q) ||
-        p.id_utente.toLowerCase().includes(q)
-    ).slice(0, 15);
-  }, [persSearch, persList]);
+    const selectedIds = new Set(selectedPersone.map((p) => p.id));
+    return persList
+      .filter(
+        (p) =>
+          !selectedIds.has(p.id) &&
+          (p.cognome.toLowerCase().includes(q) ||
+            p.nome.toLowerCase().includes(q) ||
+            p.id_utente.toLowerCase().includes(q))
+      )
+      .slice(0, 15);
+  }, [persSearch, persList, selectedPersone]);
 
-  function selectDpi(d: DpiItem) {
-    setSelectedDpi(d);
-    setDpiSearch(`${d.codice_articolo} — ${d.descrizione_articolo}`);
+  function addDpi(d: DpiItem) {
+    setSelectedDpis((prev) => [...prev, d]);
+    setDpiSearch("");
     setShowDpiSuggestions(false);
   }
 
-  function selectPersona(p: Persona) {
-    setSelectedPersona(p);
-    setPersSearch(`${p.cognome} ${p.nome}`);
+  function removeDpi(id: number) {
+    setSelectedDpis((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  function addPersona(p: Persona) {
+    setSelectedPersone((prev) => [...prev, p]);
+    setPersSearch("");
     setShowPersSuggestions(false);
+  }
+
+  function removePersona(id: number) {
+    setSelectedPersone((prev) => prev.filter((p) => p.id !== id));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedDpi || !selectedPersona) {
-      setError("Seleziona DPI e persona");
+    if (selectedDpis.length === 0 || selectedPersone.length === 0) {
+      setError("Seleziona almeno un DPI e una persona");
       return;
     }
     setLoading(true);
     setError("");
-    const res = await fetch("/api/assegnazioni", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dpi_id: selectedDpi.id,
-        personale_id: selectedPersona.id,
-        quantita,
-        data_assegnazione: dataAssegnazione,
-        note: note || null,
-      }),
-    });
-    if (res.ok) {
-      router.push("/assegnazioni");
-    } else {
-      const err = await res.json();
-      setError(err.error || "Errore creazione assegnazione");
+
+    for (const d of selectedDpis) {
+      for (const p of selectedPersone) {
+        const res = await fetch("/api/assegnazioni", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dpi_id: d.id,
+            personale_id: p.id,
+            quantita,
+            data_assegnazione: dataAssegnazione,
+            note: note || null,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          setError(err.error || "Errore creazione assegnazione");
+          setLoading(false);
+          return;
+        }
+      }
     }
+
     setLoading(false);
+    router.push("/assegnazioni");
   }
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-800 mb-6">Nuova Assegnazione</h1>
       <form onSubmit={handleSubmit} className="max-w-xl space-y-6">
-        {/* DPI autocomplete */}
+        {/* DPI multi-select */}
         <div ref={dpiRef} className="relative">
           <label className="block text-sm font-medium text-slate-600 mb-1">DPI</label>
+          {/* Selected DPI chips */}
+          {selectedDpis.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {selectedDpis.map((d) => (
+                <span
+                  key={d.id}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-xs font-medium"
+                >
+                  <span className="font-mono">{d.codice_articolo}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeDpi(d.id)}
+                    className="text-red-400 hover:text-red-600 font-bold"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <span className="text-xs text-slate-400 self-center">
+                {selectedDpis.length} selezionati
+              </span>
+            </div>
+          )}
           <input
             type="text"
             className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"
-            placeholder="Cerca per codice o descrizione..."
+            placeholder="Cerca DPI da aggiungere..."
             value={dpiSearch}
             onChange={(e) => {
               setDpiSearch(e.target.value);
-              setSelectedDpi(null);
               setShowDpiSuggestions(true);
             }}
-            onFocus={() => { if (!selectedDpi) setShowDpiSuggestions(true); }}
+            onFocus={() => setShowDpiSuggestions(true)}
           />
-          {showDpiSuggestions && dpiSuggestions.length > 0 && !selectedDpi && (
+          {showDpiSuggestions && dpiSuggestions.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
               {dpiSuggestions.map((d) => (
                 <button
                   key={d.id}
                   type="button"
                   className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex justify-between items-center"
-                  onClick={() => selectDpi(d)}
+                  onClick={() => addDpi(d)}
                 >
                   <span>
                     <span className="font-mono text-xs font-medium">{d.codice_articolo}</span>
@@ -161,45 +205,68 @@ export default function NuovaAssegnazionePage() {
               ))}
             </div>
           )}
-          {selectedDpi && (
-            <p className="text-xs text-slate-400 mt-1">
-              Disponibili: <strong>{selectedDpi.quantita_disponibile}</strong> pezzi
-            </p>
+          {dpiSuggestions.length === 0 && dpiSearch && showDpiSuggestions && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-3 text-xs text-slate-400">
+              Nessun DPI trovato.
+            </div>
           )}
         </div>
 
-        {/* Persona autocomplete */}
+        {/* Persona multi-select */}
         <div ref={persRef} className="relative">
           <label className="block text-sm font-medium text-slate-600 mb-1">Persona</label>
+          {/* Selected Persona chips */}
+          {selectedPersone.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {selectedPersone.map((p) => (
+                <span
+                  key={p.id}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-xs font-medium"
+                >
+                  <span>{p.cognome} {p.nome}</span>
+                  <button
+                    type="button"
+                    onClick={() => removePersona(p.id)}
+                    className="text-red-400 hover:text-red-600 font-bold"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <span className="text-xs text-slate-400 self-center">
+                {selectedPersone.length} selezionati
+              </span>
+            </div>
+          )}
           <input
             type="text"
             className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"
-            placeholder="Cerca per nome, cognome o ID..."
+            placeholder="Cerca persona da aggiungere..."
             value={persSearch}
             onChange={(e) => {
               setPersSearch(e.target.value);
-              setSelectedPersona(null);
               setShowPersSuggestions(true);
             }}
-            onFocus={() => { if (!selectedPersona) setShowPersSuggestions(true); }}
+            onFocus={() => setShowPersSuggestions(true)}
           />
-          {showPersSuggestions && persSuggestions.length > 0 && !selectedPersona && (
+          {showPersSuggestions && persSuggestions.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
               {persSuggestions.map((p) => (
                 <button
                   key={p.id}
                   type="button"
                   className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex justify-between items-center"
-                  onClick={() => selectPersona(p)}
+                  onClick={() => addPersona(p)}
                 >
-                  <span>
-                    <span className="font-medium">{p.cognome} {p.nome}</span>
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    ID: {p.id_utente}
-                  </span>
+                  <span className="font-medium">{p.cognome} {p.nome}</span>
+                  <span className="text-xs text-slate-400">ID: {p.id_utente}</span>
                 </button>
               ))}
+            </div>
+          )}
+          {persSuggestions.length === 0 && persSearch && showPersSuggestions && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-3 text-xs text-slate-400">
+              Nessuna persona trovata.
             </div>
           )}
         </div>
@@ -242,6 +309,14 @@ export default function NuovaAssegnazionePage() {
           />
         </div>
 
+        {/* Riepilogo */}
+        {selectedDpis.length > 0 && selectedPersone.length > 0 && (
+          <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-500">
+            Verranno create <strong className="text-slate-700">{selectedDpis.length * selectedPersone.length}</strong> assegnazioni
+            ({selectedDpis.length} DPI × {selectedPersone.length} persone)
+          </div>
+        )}
+
         {error && (
           <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
         )}
@@ -256,7 +331,7 @@ export default function NuovaAssegnazionePage() {
           </button>
           <button
             type="submit"
-            disabled={loading || !selectedDpi || !selectedPersona}
+            disabled={loading || selectedDpis.length === 0 || selectedPersone.length === 0}
             className="px-6 py-2 rounded-lg text-sm bg-slate-800 text-white disabled:opacity-50"
           >
             {loading ? "Salvataggio..." : "Assegna DPI"}
