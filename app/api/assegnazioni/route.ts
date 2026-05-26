@@ -44,17 +44,10 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { dpi_id, personale_id, quantita = 1, data_assegnazione, note } = body;
 
-  // Check availability
+  // Verify DPI exists
   const [dpiItem] = await db.select().from(dpi).where(eq(dpi.id, dpi_id));
   if (!dpiItem) {
     return Response.json({ error: "DPI not found" }, { status: 404 });
-  }
-  const disponibile = dpiItem.quantita_disponibile ?? 0;
-  if (disponibile < quantita) {
-    return Response.json(
-      { error: `Quantità insufficiente. Disponibili: ${disponibile}` },
-      { status: 400 }
-    );
   }
 
   // Create assignment and update stock
@@ -70,6 +63,7 @@ export async function POST(request: NextRequest) {
     })
     .returning();
 
+  const disponibile = dpiItem.quantita_disponibile ?? 0;
   await db
     .update(dpi)
     .set({ quantita_disponibile: disponibile - quantita })
