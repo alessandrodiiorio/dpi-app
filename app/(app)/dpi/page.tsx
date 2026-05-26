@@ -8,6 +8,7 @@ interface DpiItem {
   descrizione_articolo: string;
   quantita_totale: number;
   quantita_disponibile: number;
+  assegnato: number;
 }
 
 interface Movimento {
@@ -138,6 +139,7 @@ export default function DpiPage() {
                 <th className="px-4 py-3 text-left font-medium text-slate-500">Descrizione</th>
                 <th className="px-4 py-3 text-right font-medium text-slate-500">Q.tà Tot.</th>
                 <th className="px-4 py-3 text-right font-medium text-slate-500">Q.tà Disp.</th>
+                <th className="px-4 py-3 text-right font-medium text-slate-500">Assegnato</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -160,6 +162,11 @@ export default function DpiPage() {
                       }
                     >
                       {item.quantita_disponibile}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={item.assegnato > 0 ? "text-amber-600 font-medium" : "text-slate-300"}>
+                      {item.assegnato}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">

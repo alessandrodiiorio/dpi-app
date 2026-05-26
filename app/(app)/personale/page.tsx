@@ -11,6 +11,7 @@ interface Persona {
   sede: string;
   unita_organizzativa: string;
   competence_center: string;
+  assegnato: number;
 }
 
 interface Movimento {
@@ -157,6 +158,7 @@ export default function PersonalePage() {
                 <th className="px-4 py-3 text-left font-medium text-slate-500">Sede</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-500">U.O.</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-500">CC</th>
+                <th className="px-4 py-3 text-right font-medium text-slate-500">Assegnato</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -176,6 +178,11 @@ export default function PersonalePage() {
                   <td className="px-4 py-3 text-xs text-slate-500">{p.sede}</td>
                   <td className="px-4 py-3 text-xs text-slate-500">{p.unita_organizzativa}</td>
                   <td className="px-4 py-3 text-xs text-slate-500">{p.competence_center}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={p.assegnato > 0 ? "text-amber-600 font-medium" : "text-slate-300"}>
+                      {p.assegnato}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={(e) => {
