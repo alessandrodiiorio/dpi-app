@@ -172,45 +172,121 @@ export default function PersonalePage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map((p) => (
-                <tr
-                  key={p.id}
-                  className={`hover:bg-slate-50 ${
-                    selectedPersona?.id === p.id ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <td className="px-4 py-3 font-medium">{p.cognome}</td>
-                  <td className="px-4 py-3">{p.nome}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{p.id_utente}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{p.matricola}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{p.sede}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{p.unita_organizzativa}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{p.competence_center}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={p.assegnato > 0 ? "text-amber-600 font-medium" : "text-slate-300"}>
-                      {p.assegnato}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button
-                        onClick={() => toggleDetail(p)}
-                        className={`text-xs px-2 py-1 rounded font-medium ${
-                          selectedPersona?.id === p.id
-                            ? "bg-blue-200 text-blue-700"
-                            : "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                        }`}
-                      >
-                        Dettaglio
-                      </button>
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
-                      >
-                        Modifica
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <>
+                  <tr
+                    key={p.id}
+                    className={`hover:bg-slate-50 ${
+                      selectedPersona?.id === p.id ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-3 font-medium">{p.cognome}</td>
+                    <td className="px-4 py-3">{p.nome}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{p.id_utente}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{p.matricola}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{p.sede}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{p.unita_organizzativa}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{p.competence_center}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={p.assegnato > 0 ? "text-amber-600 font-medium" : "text-slate-300"}>
+                        {p.assegnato}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => toggleDetail(p)}
+                          className={`text-xs px-2 py-1 rounded font-medium ${
+                            selectedPersona?.id === p.id
+                              ? "bg-blue-200 text-blue-700"
+                              : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          }`}
+                        >
+                          Dettaglio
+                        </button>
+                        <button
+                          onClick={() => openEdit(p)}
+                          className="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
+                        >
+                          Modifica
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Inline detail row */}
+                  {selectedPersona?.id === p.id && (
+                    <tr key={`detail-${p.id}`}>
+                      <td colSpan={9} className="p-0 bg-slate-50">
+                        <div className="px-4 py-3 border-t">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-xs font-semibold text-slate-700">
+                              Movimenti: {p.cognome} {p.nome}
+                            </h3>
+                            <button
+                              onClick={() => { setSelectedPersona(null); setMovimenti([]); }}
+                              className="text-[10px] px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300 font-medium"
+                            >
+                              Chiudi
+                            </button>
+                          </div>
+                          {loadingMov ? (
+                            <p className="text-xs text-slate-400 py-2">Caricamento...</p>
+                          ) : movimenti.length === 0 ? (
+                            <p className="text-xs text-slate-400 py-2">Nessun movimento per questa persona.</p>
+                          ) : (
+                            <table className="w-full text-[11px]">
+                              <thead>
+                                <tr className="border-b text-slate-400">
+                                  <th className="px-2 py-1.5 text-left">Codice DPI</th>
+                                  <th className="px-2 py-1.5 text-left">Descrizione</th>
+                                  <th className="px-2 py-1.5 text-right">Q.tà</th>
+                                  <th className="px-2 py-1.5 text-left">Assegn.</th>
+                                  <th className="px-2 py-1.5 text-left">Restit.</th>
+                                  <th className="px-2 py-1.5 text-left">Stato</th>
+                                  <th className="px-2 py-1.5 text-left">Note</th>
+                                  <th className="px-2 py-1.5"></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {movimenti.map((m) => (
+                                  <tr key={m.id} className="border-t border-slate-100">
+                                    <td className="px-2 py-1.5 font-mono">{m.dpi_codice}</td>
+                                    <td className="px-2 py-1.5 max-w-[200px] truncate">{m.dpi_descrizione}</td>
+                                    <td className="px-2 py-1.5 text-right">{m.quantita}</td>
+                                    <td className="px-2 py-1.5">{m.data_assegnazione}</td>
+                                    <td className="px-2 py-1.5">{m.data_restituzione || "-"}</td>
+                                    <td className="px-2 py-1.5">
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                                          m.stato === "assegnato"
+                                            ? "bg-amber-100 text-amber-700"
+                                            : "bg-green-100 text-green-700"
+                                        }`}
+                                      >
+                                        {m.stato}
+                                      </span>
+                                    </td>
+                                    <td className="px-2 py-1.5 max-w-[120px] truncate text-slate-400">
+                                      {m.note || "-"}
+                                    </td>
+                                    <td className="px-2 py-1.5">
+                                      <button
+                                        onClick={() => eliminaMovimento(m.id)}
+                                        className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200 font-medium"
+                                        title="Elimina"
+                                      >
+                                        ✕
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
@@ -219,79 +295,6 @@ export default function PersonalePage() {
           <p className="p-6 text-center text-slate-400">Nessuna persona trovata.</p>
         )}
       </div>
-
-      {/* Drill-down movimenti */}
-      {selectedPersona && (
-        <div className="mt-4 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">
-              Movimenti: {selectedPersona.cognome} {selectedPersona.nome}
-            </h2>
-            <button
-              onClick={() => { setSelectedPersona(null); setMovimenti([]); }}
-              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
-            >
-              Chiudi
-            </button>
-          </div>
-          <div className="overflow-x-auto max-h-80 overflow-y-auto">
-            {loadingMov ? (
-              <p className="p-6 text-center text-slate-400">Caricamento...</p>
-            ) : movimenti.length === 0 ? (
-              <p className="p-6 text-center text-slate-400">Nessun movimento per questa persona.</p>
-            ) : (
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-slate-400 sticky top-0 bg-white">
-                    <th className="px-3 py-2 text-left">Codice DPI</th>
-                    <th className="px-3 py-2 text-left">Descrizione</th>
-                    <th className="px-3 py-2 text-right">Q.tà</th>
-                    <th className="px-3 py-2 text-left">Data Assegn.</th>
-                    <th className="px-3 py-2 text-left">Data Restit.</th>
-                    <th className="px-3 py-2 text-left">Stato</th>
-                    <th className="px-3 py-2 text-left">Note</th>
-                    <th className="px-3 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {movimenti.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 font-mono">{m.dpi_codice}</td>
-                      <td className="px-3 py-2 max-w-[200px] truncate">{m.dpi_descrizione}</td>
-                      <td className="px-3 py-2 text-right">{m.quantita}</td>
-                      <td className="px-3 py-2">{m.data_assegnazione}</td>
-                      <td className="px-3 py-2">{m.data_restituzione || "-"}</td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                            m.stato === "assegnato"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-green-100 text-green-700"
-                          }`}
-                        >
-                          {m.stato}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 max-w-[150px] truncate text-slate-400">
-                        {m.note || "-"}
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          onClick={() => eliminaMovimento(m.id)}
-                          className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200 font-medium"
-                          title="Elimina"
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Modal: create or edit */}
       {(editing || creating) && (
