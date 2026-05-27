@@ -27,6 +27,7 @@ const emptyForm = { codice_articolo: "", descrizione_articolo: "", quantita_tota
 export default function DpiPage() {
   const [items, setItems] = useState<DpiItem[]>([]);
   const [search, setSearch] = useState("");
+  const [assegnatoFilter, setAssegnatoFilter] = useState("tutti");
   const [editing, setEditing] = useState<DpiItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -42,11 +43,17 @@ export default function DpiPage() {
       .then(setItems);
   }, []);
 
-  const filtered = items.filter(
-    (i) =>
-      i.codice_articolo.toLowerCase().includes(search.toLowerCase()) ||
-      i.descrizione_articolo.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = items
+    .filter(
+      (i) =>
+        i.codice_articolo.toLowerCase().includes(search.toLowerCase()) ||
+        i.descrizione_articolo.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter((i) => {
+      if (assegnatoFilter === "assegnato") return i.assegnato > 0;
+      if (assegnatoFilter === "non_assegnato") return i.assegnato === 0;
+      return true;
+    });
 
   function openEdit(item: DpiItem) {
     setEditing(item);
@@ -132,12 +139,30 @@ export default function DpiPage() {
           + Nuovo DPI
         </button>
       </div>
-      <input
-        className="w-full max-w-md mb-4 px-4 py-2 border border-slate-300 rounded-lg text-sm"
-        placeholder="Cerca per codice o descrizione..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <input
+          className="w-full max-w-md px-4 py-2 border border-slate-300 rounded-lg text-sm"
+          placeholder="Cerca per codice o descrizione..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="flex gap-1">
+          {(["tutti", "assegnato", "non_assegnato"] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setAssegnatoFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                assegnatoFilter === f
+                  ? "bg-slate-800 text-white"
+                  : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {f === "tutti" ? "Tutti" : f === "assegnato" ? "Assegnati" : "Non assegnati"}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
