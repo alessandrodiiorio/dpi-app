@@ -6,7 +6,7 @@ interface Stats {
   totDpi: number;
   totPersonale: number;
   totAssegnazioni: number;
-  daRestituire: number;
+  daDemolire: number;
 }
 
 export default function Dashboard() {
@@ -27,7 +27,7 @@ export default function Dashboard() {
         totDpi: dpiData.length,
         totPersonale: persData.length,
         totAssegnazioni: assData.length,
-        daRestituire: assData.filter((a: { stato: string }) => a.stato === "assegnato")
+        daDemolire: assData.filter((a: { stato: string }) => a.stato === "assegnato")
           .length,
       });
     }
@@ -40,7 +40,7 @@ export default function Dashboard() {
     { label: "DPI in catalogo", value: stats.totDpi, color: "bg-blue-500" },
     { label: "Personale", value: stats.totPersonale, color: "bg-green-500" },
     { label: "Assegnazioni attive", value: stats.totAssegnazioni, color: "bg-amber-500" },
-    { label: "Da restituire", value: stats.daRestituire, color: "bg-red-500" },
+    { label: "Da demolire", value: stats.daDemolire, color: "bg-red-500" },
   ];
 
   return (

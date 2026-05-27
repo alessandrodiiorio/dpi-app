@@ -22,7 +22,7 @@ interface Assegnazione {
   personale_nome: string;
 }
 
-export default function RestituzionePage() {
+export default function DemolizionePage() {
   const [persList, setPersList] = useState<Persona[]>([]);
   const [persSearch, setPersSearch] = useState("");
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
@@ -30,9 +30,9 @@ export default function RestituzionePage() {
   const [assegnazioni, setAssegnazioni] = useState<Assegnazione[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Return modal
-  const [returnId, setReturnId] = useState<number | null>(null);
-  const [dataRestituzione, setDataRestituzione] = useState(
+  // Demolizione modal
+  const [demolizioneId, setDemolizioneId] = useState<number | null>(null);
+  const [dataDemolizione, setDataDemolizione] = useState(
     new Date().toISOString().split("T")[0]
   );
 
@@ -80,21 +80,21 @@ export default function RestituzionePage() {
     setLoading(false);
   }
 
-  async function restituisci(id: number) {
+  async function demolisci(id: number) {
     const res = await fetch(`/api/assegnazioni/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "restituisci", data_restituzione: dataRestituzione }),
+      body: JSON.stringify({ action: "restituisci", data_restituzione: dataDemolizione }),
     });
     if (res.ok) {
-      setReturnId(null);
+      setDemolizioneId(null);
       if (selectedPersona) loadAssegnazioni(selectedPersona.id);
     }
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Restituzione DPI</h1>
+      <h1 className="text-2xl font-bold text-slate-800 mb-6">Demolizione DPI</h1>
 
       {/* Persona autocomplete */}
       <div ref={persRef} className="relative max-w-xl mb-6">
@@ -183,12 +183,12 @@ export default function RestituzionePage() {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => {
-                          setReturnId(a.id);
-                          setDataRestituzione(new Date().toISOString().split("T")[0]);
+                          setDemolizioneId(a.id);
+                          setDataDemolizione(new Date().toISOString().split("T")[0]);
                         }}
-                        className="text-xs px-3 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 font-medium"
+                        className="text-xs px-3 py-1 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 font-medium"
                       >
-                        Restituisci
+                        Demolisci
                       </button>
                     </td>
                   </tr>
@@ -199,32 +199,32 @@ export default function RestituzionePage() {
         </div>
       )}
 
-      {/* Return modal */}
-      {returnId != null && (
+      {/* Demolizione modal */}
+      {demolizioneId != null && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
-            <h3 className="text-lg font-bold mb-4">Conferma Restituzione</h3>
+            <h3 className="text-lg font-bold mb-4">Conferma Demolizione</h3>
             <label className="block text-sm font-medium text-slate-600 mb-1">
-              Data Restituzione
+              Data Demolizione
             </label>
             <input
               type="date"
               className="w-full px-3 py-2 border rounded-lg mb-4 text-sm"
-              value={dataRestituzione}
-              onChange={(e) => setDataRestituzione(e.target.value)}
+              value={dataDemolizione}
+              onChange={(e) => setDataDemolizione(e.target.value)}
             />
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => setReturnId(null)}
+                onClick={() => setDemolizioneId(null)}
                 className="px-4 py-2 rounded-lg text-sm border border-slate-300"
               >
                 Annulla
               </button>
               <button
-                onClick={() => restituisci(returnId)}
-                className="px-4 py-2 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700"
+                onClick={() => demolisci(demolizioneId)}
+                className="px-4 py-2 rounded-lg text-sm bg-orange-600 text-white hover:bg-orange-700"
               >
-                Conferma Restituzione
+                Conferma Demolizione
               </button>
             </div>
           </div>

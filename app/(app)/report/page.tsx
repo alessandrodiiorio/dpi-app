@@ -52,7 +52,7 @@ const detailLabels: Record<DetailType, string> = {
   personale: "Personale",
   assegnazioni: "Tutte le Assegnazioni",
   attivi: "Assegnazioni Attive",
-  restituiti: "Assegnazioni Restituite",
+  restituiti: "Assegnazioni Demolite",
   "stock-ok": "DPI con Stock Disponibile",
   "stock-zero": "DPI con Stock Esaurito",
   "stock-nodata": "DPI con Stock Non Impostato",
@@ -161,10 +161,10 @@ export default function ReportPage() {
           onClick={() => openDetail("attivi", "Assegnazioni Attive")}
         />
         <ClickCard
-          label="Restituiti"
+          label="Demoliti"
           value={data.summary.restituiti}
           color="bg-teal-500"
-          onClick={() => openDetail("restituiti", "Assegnazioni Restituite")}
+          onClick={() => openDetail("restituiti", "Assegnazioni Demolite")}
         />
         <ClickCard
           label="Stock > 0"
@@ -216,7 +216,7 @@ export default function ReportPage() {
                 <div
                   className="w-full bg-emerald-500 rounded-t"
                   style={{ height: `${(m.restituiti / maxMonthVal) * 80}px` }}
-                  title={`Restituiti: ${m.restituiti}`}
+                  title={`Demoliti: ${m.restituiti}`}
                 />
               </div>
               <span className="text-[10px] text-slate-400 rotate-45 origin-left translate-x-2 whitespace-nowrap">
@@ -230,7 +230,7 @@ export default function ReportPage() {
             <span className="w-3 h-3 bg-amber-400 rounded" /> Assegnati
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 bg-emerald-500 rounded" /> Restituiti
+            <span className="w-3 h-3 bg-emerald-500 rounded" /> Demoliti
           </span>
         </div>
       </div>

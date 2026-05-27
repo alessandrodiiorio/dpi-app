@@ -250,7 +250,7 @@ export default function DpiPage() {
                                   <th className="px-2 py-1.5 text-left">Persona</th>
                                   <th className="px-2 py-1.5 text-right">Q.tà</th>
                                   <th className="px-2 py-1.5 text-left">Assegn.</th>
-                                  <th className="px-2 py-1.5 text-left">Restit.</th>
+                                  <th className="px-2 py-1.5 text-left">Demoliz.</th>
                                   <th className="px-2 py-1.5 text-left">Stato</th>
                                   <th className="px-2 py-1.5 text-left">Note</th>
                                   <th className="px-2 py-1.5"></th>

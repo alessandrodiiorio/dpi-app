@@ -138,7 +138,7 @@ export default function AssegnazioniPage() {
     setPersSearch("");
   }
 
-  async function restituisci(id: number) {
+  async function demolisci(id: number) {
     const res = await fetch(`/api/assegnazioni/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -180,7 +180,7 @@ export default function AssegnazioniPage() {
                 : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-100"
             }`}
           >
-            {s === "tutti" ? "Tutti" : s === "assegnato" ? "Assegnati" : "Restituiti"}
+            {s === "tutti" ? "Tutti" : s === "assegnato" ? "Assegnati" : "Demoliti"}
           </button>
         ))}
         <div className="flex items-center gap-2 ml-4">
@@ -324,7 +324,7 @@ export default function AssegnazioniPage() {
                 <th className="px-4 py-3 text-left font-medium text-slate-500">Persona</th>
                 <th className="px-4 py-3 text-right font-medium text-slate-500">Q.tà</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-500">Assegnazione</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Restituzione</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-500">Demolizione</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-500">Stato</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -361,10 +361,10 @@ export default function AssegnazioniPage() {
                     <div className="flex items-center gap-1 justify-end">
                       {a.stato === "assegnato" && (
                         <button
-                          onClick={() => restituisci(a.id)}
-                          className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 font-medium"
+                          onClick={() => demolisci(a.id)}
+                          className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 font-medium"
                         >
-                          Restituisci
+                          Demolisci
                         </button>
                       )}
                       <button

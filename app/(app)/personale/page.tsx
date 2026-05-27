@@ -265,7 +265,7 @@ export default function PersonalePage() {
                                   <th className="px-2 py-1.5 text-left">Descrizione</th>
                                   <th className="px-2 py-1.5 text-right">Q.tà</th>
                                   <th className="px-2 py-1.5 text-left">Assegn.</th>
-                                  <th className="px-2 py-1.5 text-left">Restit.</th>
+                                  <th className="px-2 py-1.5 text-left">Demoliz.</th>
                                   <th className="px-2 py-1.5 text-left">Stato</th>
                                   <th className="px-2 py-1.5 text-left">Note</th>
                                   <th className="px-2 py-1.5"></th>
