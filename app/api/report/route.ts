@@ -1,11 +1,11 @@
 import { getDb } from "@/lib/db";
-import { dpi, personale, assegnazioni } from "@/db/schema";
+import { dpi, personale, assegnazioni, sostituzioni } from "@/db/schema";
 import { sql, eq } from "drizzle-orm";
 
 export async function GET() {
   const db = getDb();
 
-  const [dpiRows, persRows, assRows] = await Promise.all([
+  const [dpiRows, persRows, assRows, sostRows] = await Promise.all([
     db.select().from(dpi),
     db.select().from(personale),
     db.select({
@@ -17,6 +17,7 @@ export async function GET() {
       data_restituzione: assegnazioni.data_restituzione,
       stato: assegnazioni.stato,
     }).from(assegnazioni),
+    db.select().from(sostituzioni),
   ]);
 
   const assegnati = assRows.filter((a) => a.stato === "assegnato");
@@ -68,12 +69,12 @@ export async function GET() {
 
   // Monthly timeline (last 12 months)
   const now = new Date();
-  const months: { label: string; assegnati: number; restituiti: number }[] = [];
+  const months: { label: string; assegnati: number; restituiti: number; sostituzioni: number }[] = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const label = d.toLocaleDateString("it-IT", { month: "short", year: "2-digit" });
-    months.push({ label, assegnati: 0, restituiti: 0 });
+    months.push({ label, assegnati: 0, restituiti: 0, sostituzioni: 0 });
   }
 
   for (const a of assRows) {
@@ -94,6 +95,16 @@ export async function GET() {
     }
   }
 
+  for (const s of sostRows) {
+    if (s.data_sostituzione) {
+      const d = new Date(s.data_sostituzione);
+      const m = months.find((x) =>
+        x.label === d.toLocaleDateString("it-IT", { month: "short", year: "2-digit" })
+      );
+      if (m) m.sostituzioni++;
+    }
+  }
+
   // Stock summary
   const stockOk = dpiRows.filter((d) => (d.quantita_disponibile ?? 0) > 0).length;
   const stockZero = dpiRows.filter((d) => (d.quantita_disponibile ?? 0) <= 0 && (d.quantita_totale ?? 0) > 0).length;
@@ -106,6 +117,7 @@ export async function GET() {
       totAssegnazioni: assRows.length,
       attivi: assegnati.length,
       restituiti: restituiti.length,
+      sostituzioni: sostRows.length,
       stockOk,
       stockZero,
       stockNoData,

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
-import { dpi, personale, assegnazioni } from "@/db/schema";
+import { dpi, personale, assegnazioni, sostituzioni } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
@@ -74,6 +74,21 @@ export async function GET(request: NextRequest) {
         .leftJoin(personale, eq(assegnazioni.personale_id, personale.id))
         .where(eq(assegnazioni.stato, "restituito"))
         .orderBy(assegnazioni.data_restituzione);
+      return Response.json(rows);
+    }
+    case "sostituzioni": {
+      const rows = await db
+        .select({
+          id: sostituzioni.id,
+          personale_cognome: personale.cognome,
+          personale_nome: personale.nome,
+          quantita: sostituzioni.quantita,
+          data_sostituzione: sostituzioni.data_sostituzione,
+          note: sostituzioni.note,
+        })
+        .from(sostituzioni)
+        .leftJoin(personale, eq(sostituzioni.personale_id, personale.id))
+        .orderBy(sostituzioni.data_sostituzione);
       return Response.json(rows);
     }
     case "stock-ok": {

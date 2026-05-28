@@ -9,6 +9,7 @@ interface ReportData {
     totAssegnazioni: number;
     attivi: number;
     restituiti: number;
+    sostituzioni: number;
     stockOk: number;
     stockZero: number;
     stockNoData: number;
@@ -32,6 +33,7 @@ interface ReportData {
     label: string;
     assegnati: number;
     restituiti: number;
+    sostituzioni: number;
   }[];
 }
 
@@ -41,6 +43,7 @@ type DetailType =
   | "assegnazioni"
   | "attivi"
   | "restituiti"
+  | "sostituzioni"
   | "stock-ok"
   | "stock-zero"
   | "stock-nodata"
@@ -53,6 +56,7 @@ const detailLabels: Record<DetailType, string> = {
   assegnazioni: "Tutte le Assegnazioni",
   attivi: "Assegnazioni Attive",
   restituiti: "Assegnazioni Demolite",
+  sostituzioni: "Sostituzioni DPI",
   "stock-ok": "DPI con Stock Disponibile",
   "stock-zero": "DPI con Stock Esaurito",
   "stock-nodata": "DPI con Stock Non Impostato",
@@ -126,7 +130,7 @@ export default function ReportPage() {
   if (!data) return <p className="text-slate-400">Caricamento report...</p>;
 
   const maxMonthVal = Math.max(
-    ...data.months.map((m) => Math.max(m.assegnati, m.restituiti)),
+    ...data.months.map((m) => Math.max(m.assegnati, m.restituiti, m.sostituzioni)),
     1
   );
 
@@ -135,7 +139,7 @@ export default function ReportPage() {
       <h1 className="text-2xl font-bold text-slate-800">Reportistica</h1>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <ClickCard
           label="DPI Catalogo"
           value={data.summary.totDpi}
@@ -165,6 +169,12 @@ export default function ReportPage() {
           value={data.summary.restituiti}
           color="bg-teal-500"
           onClick={() => openDetail("restituiti", "Assegnazioni Demolite")}
+        />
+        <ClickCard
+          label="Sostituzioni"
+          value={data.summary.sostituzioni}
+          color="bg-orange-500"
+          onClick={() => openDetail("sostituzioni", "Sostituzioni DPI")}
         />
         <ClickCard
           label="Stock > 0"
@@ -210,13 +220,18 @@ export default function ReportPage() {
               <div className="w-full flex flex-col justify-end gap-0.5" style={{ height: 160 }}>
                 <div
                   className="w-full bg-amber-400 rounded-t"
-                  style={{ height: `${(m.assegnati / maxMonthVal) * 80}px` }}
+                  style={{ height: `${(m.assegnati / maxMonthVal) * 50}px` }}
                   title={`Assegnati: ${m.assegnati}`}
                 />
                 <div
                   className="w-full bg-emerald-500 rounded-t"
-                  style={{ height: `${(m.restituiti / maxMonthVal) * 80}px` }}
+                  style={{ height: `${(m.restituiti / maxMonthVal) * 50}px` }}
                   title={`Demoliti: ${m.restituiti}`}
+                />
+                <div
+                  className="w-full bg-orange-500 rounded-t"
+                  style={{ height: `${(m.sostituzioni / maxMonthVal) * 50}px` }}
+                  title={`Sostituzioni: ${m.sostituzioni}`}
                 />
               </div>
               <span className="text-[10px] text-slate-400 rotate-45 origin-left translate-x-2 whitespace-nowrap">
@@ -231,6 +246,9 @@ export default function ReportPage() {
           </span>
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 bg-emerald-500 rounded" /> Demoliti
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-orange-500 rounded" /> Sostituzioni
           </span>
         </div>
       </div>

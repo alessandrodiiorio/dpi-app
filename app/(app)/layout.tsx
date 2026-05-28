@@ -37,6 +37,12 @@ function Sidebar() {
         >
           ↺ Nuova Demolizione
         </Link>
+        <Link
+          href="/sostituzioni"
+          className="block px-4 py-2 rounded-lg text-sm font-medium bg-orange-600 text-white hover:bg-orange-700 transition-colors text-center"
+        >
+          ⟳ Sostituzione DPI
+        </Link>
         <AdminLinks />
       </nav>
       <div className="border-t border-slate-200 pt-3">

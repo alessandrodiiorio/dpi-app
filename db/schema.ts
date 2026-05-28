@@ -39,3 +39,14 @@ export const users = pgTable("users", {
   password_hash: text("password_hash").notNull(),
   ruolo: ruoloEnum("ruolo").default("operatore").notNull(),
 });
+
+export const sostituzioni = pgTable("sostituzioni", {
+  id: serial("id").primaryKey(),
+  personale_id: integer("personale_id").references(() => personale.id),
+  vecchia_assegnazione_id: integer("vecchia_assegnazione_id").references(() => assegnazioni.id),
+  nuovo_dpi_id: integer("nuovo_dpi_id").references(() => dpi.id),
+  nuova_assegnazione_id: integer("nuova_assegnazione_id").references(() => assegnazioni.id),
+  quantita: integer("quantita").default(1),
+  data_sostituzione: date("data_sostituzione"),
+  note: text("note"),
+});
