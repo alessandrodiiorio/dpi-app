@@ -85,9 +85,7 @@ export default function SostituzioniPage() {
   // Load lists
   useEffect(() => {
     fetch("/api/personale").then((r) => r.json()).then(setPersList);
-    fetch("/api/dpi").then((r) => r.json()).then((rows: DpiItem[]) =>
-      setDpiList(rows.filter((d) => (d.quantita_disponibile ?? 0) > 0))
-    );
+    fetch("/api/dpi").then((r) => r.json()).then(setDpiList);
   }, []);
 
   // Click outside
