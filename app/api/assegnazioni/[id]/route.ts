@@ -24,7 +24,7 @@ export async function PUT(
   const db = getDb();
   const { id } = await params;
   const body = await request.json();
-  const { action, data_restituzione } = body;
+  const { action, data_restituzione, ...fields } = body;
 
   if (action === "restituisci") {
     const [assignment] = await db
@@ -37,7 +37,6 @@ export async function PUT(
       return Response.json({ error: "Già restituito" }, { status: 400 });
     }
 
-    // Update assignment
     const [updated] = await db
       .update(assegnazioni)
       .set({
@@ -47,7 +46,6 @@ export async function PUT(
       .where(eq(assegnazioni.id, parseInt(id)))
       .returning();
 
-    // Return stock
     if (assignment.dpi_id != null) {
       const [dpiItem] = await db
         .select()
@@ -64,15 +62,52 @@ export async function PUT(
     return Response.json(updated);
   }
 
-  // Regular update
-  const item = await db
+  // Regular update with stock adjustment
+  const [old] = await db
+    .select()
+    .from(assegnazioni)
+    .where(eq(assegnazioni.id, parseInt(id)));
+
+  if (!old) return Response.json({ error: "Not found" }, { status: 404 });
+
+  const newQty = fields.quantita !== undefined ? fields.quantita : old.quantita;
+
+  // Stock adjustment for active assignments when quantity changes
+  if (old.stato === "assegnato" && fields.quantita !== undefined) {
+    const dpiId = old.dpi_id;
+    if (dpiId != null) {
+      const [dpiItem] = await db.select().from(dpi).where(eq(dpi.id, dpiId));
+      if (dpiItem) {
+        const diff = (fields.quantita ?? 0) - (old.quantita ?? 0);
+        if (diff !== 0) {
+          const newStock = (dpiItem.quantita_disponibile ?? 0) - diff;
+          await db
+            .update(dpi)
+            .set({ quantita_disponibile: Math.max(0, newStock) })
+            .where(eq(dpi.id, dpiId));
+        }
+      }
+    }
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (fields.quantita !== undefined) updateData.quantita = fields.quantita;
+  if (fields.data_assegnazione !== undefined) updateData.data_assegnazione = fields.data_assegnazione;
+  if (fields.data_restituzione !== undefined) updateData.data_restituzione = fields.data_restituzione;
+  if (fields.note !== undefined) updateData.note = fields.note;
+  if (fields.stato !== undefined) updateData.stato = fields.stato;
+
+  if (Object.keys(updateData).length === 0) {
+    return Response.json(old);
+  }
+
+  const [item] = await db
     .update(assegnazioni)
-    .set(body)
+    .set(updateData)
     .where(eq(assegnazioni.id, parseInt(id)))
     .returning();
 
-  if (!item.length) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json(item[0]);
+  return Response.json(item);
 }
 
 export async function DELETE(
@@ -82,7 +117,6 @@ export async function DELETE(
   const db = getDb();
   const { id } = await params;
 
-  // Fetch assignment before deleting to restore stock if active
   const [assignment] = await db
     .select()
     .from(assegnazioni)
@@ -90,7 +124,6 @@ export async function DELETE(
 
   if (!assignment) return Response.json({ error: "Not found" }, { status: 404 });
 
-  // If still active, return stock to DPI
   if (assignment.stato === "assegnato" && assignment.dpi_id != null) {
     const [dpiItem] = await db
       .select()

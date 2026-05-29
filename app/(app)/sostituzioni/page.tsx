@@ -78,6 +78,14 @@ export default function SostituzioniPage() {
   const [dataDa, setDataDa] = useState("");
   const [dataA, setDataA] = useState("");
 
+  // Edit modal for history
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDpiSearch, setEditDpiSearch] = useState("");
+  const [editDpi, setEditDpi] = useState<DpiItem | null>(null);
+  const [showEditDpi, setShowEditDpi] = useState(false);
+  const [editForm, setEditForm] = useState({ quantita: 1, data_sostituzione: "", note: "" });
+  const editDpiRef = useRef<HTMLDivElement>(null);
+
   const persRef = useRef<HTMLDivElement>(null);
   const dpiRef = useRef<HTMLDivElement>(null);
   const filtroPersRef = useRef<HTMLDivElement>(null);
@@ -97,6 +105,8 @@ export default function SostituzioniPage() {
         setShowDpiSuggestions(false);
       if (filtroPersRef.current && !filtroPersRef.current.contains(e.target as Node))
         setShowFiltroPers(false);
+      if (editDpiRef.current && !editDpiRef.current.contains(e.target as Node))
+        setShowEditDpi(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -138,6 +148,13 @@ export default function SostituzioniPage() {
       (d) => d.codice_articolo.toLowerCase().includes(q) || d.descrizione_articolo.toLowerCase().includes(q)
     ).slice(0, 15);
   }, [dpiSearch, dpiList]);
+
+  const editDpiSuggestions = useMemo(() => {
+    const q = editDpiSearch.toLowerCase();
+    return dpiList.filter(
+      (d) => d.codice_articolo.toLowerCase().includes(q) || d.descrizione_articolo.toLowerCase().includes(q)
+    ).slice(0, 15);
+  }, [editDpiSearch, dpiList]);
 
   function selectPersona(p: Persona) {
     setSelectedPersona(p);
@@ -198,6 +215,36 @@ export default function SostituzioniPage() {
     const res = await fetch(`/api/sostituzioni/${id}`, { method: "DELETE" });
     if (res.ok) {
       setItems((prev) => prev.filter((i) => i.id !== id));
+    }
+  }
+
+  function openEdit(s: Sostituzione) {
+    setEditingId(s.id);
+    setEditForm({
+      quantita: s.quantita,
+      data_sostituzione: s.data_sostituzione || "",
+      note: s.note || "",
+    });
+    setEditDpiSearch("");
+    setEditDpi(null);
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    const body: Record<string, unknown> = {
+      quantita: editForm.quantita,
+      data_sostituzione: editForm.data_sostituzione,
+      note: editForm.note || null,
+    };
+    if (editDpi) body.nuovo_dpi_id = editDpi.id;
+    const res = await fetch(`/api/sostituzioni/${editingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      loadItems();
     }
   }
 
@@ -413,7 +460,10 @@ export default function SostituzioniPage() {
                       <td className="px-4 py-3 text-xs">{s.data_sostituzione}</td>
                       <td className="px-4 py-3 text-xs text-slate-400 max-w-[120px] truncate">{s.note || "-"}</td>
                       <td className="px-4 py-3">
-                        <button onClick={() => eliminaSostituzione(s.id)} className="text-xs px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 font-medium" title="Annulla">✕</button>
+                        <div className="flex items-center gap-1 justify-end">
+                          <button onClick={() => openEdit(s)} className="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium">Modifica</button>
+                          <button onClick={() => eliminaSostituzione(s.id)} className="text-xs px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 font-medium" title="Annulla">✕</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -423,6 +473,83 @@ export default function SostituzioniPage() {
           )}
         </div>
       </div>
+
+      {/* Edit modal */}
+      {editingId != null && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
+            <h3 className="text-lg font-bold mb-4">Modifica Sostituzione</h3>
+
+            <div ref={editDpiRef} className="relative mb-3">
+              <label className="block text-sm font-medium text-slate-600 mb-1">Nuovo DPI (opzionale)</label>
+              {editDpi ? (
+                <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm">
+                  <span className="font-mono font-medium">{editDpi.codice_articolo}</span>
+                  <span className="truncate">{editDpi.descrizione_articolo}</span>
+                  <button type="button" onClick={() => { setEditDpi(null); setEditDpiSearch(""); }} className="text-xs text-red-500 hover:underline ml-auto">×</button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                    placeholder="Cerca DPI per cambiare..."
+                    value={editDpiSearch}
+                    onChange={(e) => { setEditDpiSearch(e.target.value); setShowEditDpi(true); }}
+                    onFocus={() => setShowEditDpi(true)}
+                  />
+                  {showEditDpi && editDpiSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      {editDpiSuggestions.map((d) => (
+                        <button key={d.id} type="button" className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 flex justify-between" onClick={() => { setEditDpi(d); setEditDpiSearch(""); setShowEditDpi(false); }}>
+                          <span><span className="font-mono font-medium">{d.codice_articolo}</span><span className="mx-2 text-slate-300">—</span><span>{d.descrizione_articolo}</span></span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <label className="block text-sm font-medium text-slate-600 mb-1">Quantità</label>
+            <input
+              type="number"
+              min={1}
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
+              value={editForm.quantita}
+              onChange={(e) => setEditForm({ ...editForm, quantita: parseInt(e.target.value) || 1 })}
+            />
+            <label className="block text-sm font-medium text-slate-600 mb-1">Data Sostituzione</label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
+              value={editForm.data_sostituzione}
+              onChange={(e) => setEditForm({ ...editForm, data_sostituzione: e.target.value })}
+            />
+            <label className="block text-sm font-medium text-slate-600 mb-1">Note</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-lg mb-4 text-sm"
+              value={editForm.note}
+              onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setEditingId(null)}
+                className="px-4 py-2 rounded-lg text-sm border border-slate-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={saveEdit}
+                className="px-4 py-2 rounded-lg text-sm bg-slate-800 text-white hover:bg-slate-700"
+              >
+                Salva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

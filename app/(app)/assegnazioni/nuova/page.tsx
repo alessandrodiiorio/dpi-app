@@ -22,9 +22,10 @@ export default function NuovaAssegnazionePage() {
   const [dpiList, setDpiList] = useState<DpiItem[]>([]);
   const [persList, setPersList] = useState<Persona[]>([]);
 
-  // DPI - multi-select
+  // DPI - multi-select with per-item quantity
   const [dpiSearch, setDpiSearch] = useState("");
   const [selectedDpis, setSelectedDpis] = useState<DpiItem[]>([]);
+  const [dpiQuantities, setDpiQuantities] = useState<Record<number, number>>({});
   const [showDpiSuggestions, setShowDpiSuggestions] = useState(false);
 
   // Persona - multi-select
@@ -32,7 +33,6 @@ export default function NuovaAssegnazionePage() {
   const [selectedPersone, setSelectedPersone] = useState<Persona[]>([]);
   const [showPersSuggestions, setShowPersSuggestions] = useState(false);
 
-  const [quantita, setQuantita] = useState(1);
   const [dataAssegnazione, setDataAssegnazione] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -89,13 +89,16 @@ export default function NuovaAssegnazionePage() {
   }, [persSearch, persList, selectedPersone]);
 
   function addDpi(d: DpiItem) {
+    if (selectedDpis.some((x) => x.id === d.id)) return;
     setSelectedDpis((prev) => [...prev, d]);
+    setDpiQuantities((prev) => ({ ...prev, [d.id]: 1 }));
     setDpiSearch("");
     setShowDpiSuggestions(false);
   }
 
   function removeDpi(id: number) {
     setSelectedDpis((prev) => prev.filter((d) => d.id !== id));
+    setDpiQuantities((prev) => { const n = { ...prev }; delete n[id]; return n; });
   }
 
   function addPersona(p: Persona) {
@@ -125,7 +128,7 @@ export default function NuovaAssegnazionePage() {
           body: JSON.stringify({
             dpi_id: d.id,
             personale_id: p.id,
-            quantita,
+            quantita: dpiQuantities[d.id] || 1,
             data_assegnazione: dataAssegnazione,
             note: note || null,
           }),
@@ -152,17 +155,26 @@ export default function NuovaAssegnazionePage() {
           <label className="block text-sm font-medium text-slate-600 mb-1">DPI</label>
           {/* Selected DPI chips */}
           {selectedDpis.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
+            <div className="flex flex-wrap gap-2 mb-2">
               {selectedDpis.map((d) => (
                 <span
                   key={d.id}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-xs font-medium"
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-xs"
                 >
-                  <span className="font-mono">{d.codice_articolo}</span>
+                  <span className="font-mono font-medium">{d.codice_articolo}</span>
+                  <span className="text-slate-400 truncate max-w-[100px] hidden sm:inline">{d.descrizione_articolo}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={dpiQuantities[d.id] || 1}
+                    onChange={(e) => setDpiQuantities(prev => ({ ...prev, [d.id]: parseInt(e.target.value) || 1 }))}
+                    className="w-12 px-1 py-0.5 border border-slate-300 rounded text-xs text-center"
+                    onClick={(e) => e.stopPropagation()}
+                  />
                   <button
                     type="button"
                     onClick={() => removeDpi(d.id)}
-                    className="text-red-400 hover:text-red-600 font-bold"
+                    className="text-red-400 hover:text-red-600 font-bold text-sm"
                   >
                     ×
                   </button>
@@ -282,18 +294,6 @@ export default function NuovaAssegnazionePage() {
             value={dataAssegnazione}
             onChange={(e) => setDataAssegnazione(e.target.value)}
             required
-          />
-        </div>
-
-        {/* Quantità */}
-        <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">Quantità</label>
-          <input
-            type="number"
-            min={0}
-            className="w-32 px-4 py-2 border border-slate-300 rounded-lg text-sm"
-            value={quantita}
-            onChange={(e) => setQuantita(parseInt(e.target.value) || 0)}
           />
         </div>
 

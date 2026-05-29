@@ -52,6 +52,10 @@ export default function AssegnazioniPage() {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [showPersSuggestions, setShowPersSuggestions] = useState(false);
 
+  // Edit modal
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ quantita: 1, data_assegnazione: "", data_restituzione: "", note: "" });
+
   const dpiRef = useRef<HTMLDivElement>(null);
   const persRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +163,30 @@ export default function AssegnazioniPage() {
     const res = await fetch(`/api/assegnazioni/${id}`, { method: "DELETE" });
     if (res.ok) {
       setItems((prev) => prev.filter((i) => i.id !== id));
+    }
+  }
+
+  async function openEdit(a: Assegnazione) {
+    setEditingId(a.id);
+    setEditForm({
+      quantita: a.quantita,
+      data_assegnazione: a.data_assegnazione,
+      data_restituzione: a.data_restituzione || "",
+      note: a.note || "",
+    });
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    const res = await fetch(`/api/assegnazioni/${editingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setItems((prev) => prev.map((i) => (i.id === editingId ? { ...i, ...updated } : i)));
+      setEditingId(null);
     }
   }
 
@@ -359,6 +387,12 @@ export default function AssegnazioniPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={() => openEdit(a)}
+                        className="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 font-medium"
+                      >
+                        Modifica
+                      </button>
                       {a.stato === "assegnato" && (
                         <button
                           onClick={() => demolisci(a.id)}
@@ -385,6 +419,58 @@ export default function AssegnazioniPage() {
           <p className="p-6 text-center text-slate-400">Nessuna assegnazione.</p>
         )}
       </div>
+
+      {/* Edit modal */}
+      {editingId != null && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
+            <h3 className="text-lg font-bold mb-4">Modifica Assegnazione</h3>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Quantità</label>
+            <input
+              type="number"
+              min={1}
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
+              value={editForm.quantita}
+              onChange={(e) => setEditForm({ ...editForm, quantita: parseInt(e.target.value) || 1 })}
+            />
+            <label className="block text-sm font-medium text-slate-600 mb-1">Data Assegnazione</label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
+              value={editForm.data_assegnazione}
+              onChange={(e) => setEditForm({ ...editForm, data_assegnazione: e.target.value })}
+            />
+            <label className="block text-sm font-medium text-slate-600 mb-1">Data Demolizione</label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border rounded-lg mb-3 text-sm"
+              value={editForm.data_restituzione}
+              onChange={(e) => setEditForm({ ...editForm, data_restituzione: e.target.value })}
+            />
+            <label className="block text-sm font-medium text-slate-600 mb-1">Note</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-lg mb-4 text-sm"
+              value={editForm.note}
+              onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setEditingId(null)}
+                className="px-4 py-2 rounded-lg text-sm border border-slate-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={saveEdit}
+                className="px-4 py-2 rounded-lg text-sm bg-slate-800 text-white hover:bg-slate-700"
+              >
+                Salva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
